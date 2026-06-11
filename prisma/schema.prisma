@@ -1,0 +1,59 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id              String            @id @default(cuid())
+  name            String
+  email           String            @unique
+  passwordHash    String
+  role            String            @default("USER")
+  status          String            @default("PENDING")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  books           Book[]
+  readingProgress ReadingProgress[]
+}
+
+model Book {
+  id              String     @id @default(cuid())
+  title           String
+  author          String
+  description     String?
+  coverUrl        String?
+  fileUrl         String
+  fileSize        Int
+  pageCount       Int?
+  status          String     @default("PENDING")
+  rejectionReason String?
+  uploaderId      String
+  uploader        User       @relation(fields: [uploaderId], references: [id])
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  readingProgress ReadingProgress[]
+
+  @@index([status])
+  @@index([title, author])
+}
+
+model ReadingProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  bookId      String
+  currentPage Int      @default(1)
+  totalPages  Int
+  lastReadAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bookId])
+  @@index([userId])
+}

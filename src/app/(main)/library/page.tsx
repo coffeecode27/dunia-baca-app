@@ -1,0 +1,116 @@
+import { Suspense } from "react"
+import Link from "next/link"
+import { redirect } from "next/navigation"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { buttonVariants } from "@/components/ui/button"
+import { SearchBar } from "./_components/SearchBar"
+import { BookCard } from "@/components/books/BookCard"
+import { cn } from "@/lib/utils"
+import { Upload, Library, BookMarked } from "lucide-react"
+
+interface LibraryPageProps {
+  searchParams: Promise<{ search?: string; tab?: string }>
+}
+
+export default async function LibraryPage({ searchParams }: LibraryPageProps) {
+  const { search, tab = "umum" } = await searchParams
+  const session = await auth()
+
+  const isPrivate = tab === "koleksi"
+
+  if (isPrivate && !session) {
+    redirect("/library?tab=umum")
+  }
+
+  const books = await prisma.book.findMany({
+    where: {
+      status: "APPROVED",
+      ...(isPrivate && session
+        ? { uploaderId: session.user.id }
+        : {}),
+      ...(search
+        ? {
+            OR: [
+              { title: { contains: search } },
+              { author: { contains: search } },
+            ],
+          }
+        : {}),
+    },
+    select: {
+      id: true,
+      title: true,
+      author: true,
+      coverUrl: true,
+      _count: {
+        select: { readingProgress: true },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 24,
+  })
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">
+            {isPrivate ? "Koleksi Saya" : "Perpustakaan"}
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            {isPrivate
+              ? "Koleksi ebook yang telah kamu upload"
+              : "Jelajahi koleksi ebook dari komunitas Dunia Baca"}
+          </p>
+        </div>
+        {session && (
+          <Link
+            href="/upload"
+            className={cn(buttonVariants(), "shrink-0 gap-2")}
+          >
+            <Upload className="h-4 w-4" />
+            <span className="hidden sm:inline">Upload Ebook</span>
+          </Link>
+        )}
+      </div>
+
+      {/* Search */}
+      <Suspense>
+        <SearchBar />
+      </Suspense>
+
+      {/* Book Grid */}
+      {books.length > 0 ? (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+          {books.map((book) => (
+            <BookCard
+              key={book.id}
+              book={book}
+              readerCount={book._count.readingProgress}
+            />
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <div className="rounded-full bg-muted p-6">
+            {isPrivate ? (
+              <BookMarked className="h-12 w-12 text-muted-foreground/60" />
+            ) : (
+              <Library className="h-12 w-12 text-muted-foreground/60" />
+            )}
+          </div>
+          <h2 className="mt-6 text-lg font-semibold">
+            {isPrivate ? "Belum ada ebook" : "Belum ada ebook"}
+          </h2>
+          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+            {isPrivate
+              ? "Kamu belum mengupload ebook apapun. Mulai berbagi literasi sekarang!"
+              : "Belum ada ebook yang tersedia. Jadilah yang pertama mengupload ebook untuk berbagi literasi!"}
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
