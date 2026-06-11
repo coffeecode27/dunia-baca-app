@@ -16,10 +16,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { Menu, X } from "lucide-react"
+import { Menu, X, Sun, Moon } from "lucide-react"
+import { useTheme } from "next-themes"
 
 export default function Navbar() {
   const { data: session, status } = useSession()
+  const { theme, setTheme } = useTheme()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -48,7 +50,7 @@ export default function Navbar() {
           <img
             src="/duniabaca-icon.png"
             alt="Dunia Baca"
-            className="h-8 w-8 sm:h-9 sm:w-9 rounded-md"
+            className="h-8 w-8 sm:h-9 sm:w-9 rounded-md dark:invert"
           />
           <span>Dunia Baca</span>
         </Link>
@@ -76,6 +78,14 @@ export default function Navbar() {
 
         {/* Desktop auth buttons — right */}
         <div className="hidden items-center gap-2 sm:flex">
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="rounded-md border-2 border-border p-1.5 shadow-[2px_2px_0px_0px_#000000] transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none"
+            aria-label="Toggle theme"
+          >
+            <Sun className="h-4 w-4 hidden dark:block" />
+            <Moon className="h-4 w-4 block dark:hidden" />
+          </button>
           {status === "loading" ? (
             <div className="h-9 w-9 rounded-md bg-muted animate-pulse" />
           ) : session ? (
@@ -124,13 +134,23 @@ export default function Navbar() {
         </div>
 
         {/* Mobile hamburger */}
-        <button
+        <div className="flex items-center gap-1 sm:hidden">
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="rounded-md border-2 border-border p-1.5 shadow-[2px_2px_0px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+            aria-label="Toggle theme"
+          >
+            <Sun className="h-4 w-4 hidden dark:block" />
+            <Moon className="h-4 w-4 block dark:hidden" />
+          </button>
+          <button
           onClick={() => setMobileOpen(!mobileOpen)}
           className="sm:hidden rounded-md border-2 border-border p-1.5 shadow-[2px_2px_0px_0px_#000000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
           aria-label="Toggle menu"
         >
           {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </button>
+      </div>
       </div>
 
       {/* Mobile menu */}

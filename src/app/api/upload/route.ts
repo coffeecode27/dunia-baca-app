@@ -1,38 +1,33 @@
 import { NextResponse } from "next/server"
 import { headers } from "next/headers"
-import { writeFile, mkdir, unlink } from "node:fs/promises"
-import path from "node:path"
 import crypto from "node:crypto"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { createClient } from "@supabase/supabase-js"
 import { uploadBookSchema } from "@/lib/validations"
 import { checkRateLimit } from "@/lib/rate-limit"
 
-const MAX_PDF_SIZE = 50 * 1024 * 1024 // 50MB
-const MAX_COVER_SIZE = 5 * 1024 * 1024 // 5MB
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
+
+const MAX_PDF_SIZE = 50 * 1024 * 1024
+const MAX_COVER_SIZE = 5 * 1024 * 1024
 const ALLOWED_PDF_TYPES = ["application/pdf"]
-const ALLOWED_COVER_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-]
+const ALLOWED_COVER_TYPES = ["image/jpeg", "image/png", "image/webp"]
 
 function randomId() {
   return crypto.randomBytes(16).toString("hex")
 }
 
 export async function POST(request: Request) {
-  const savedFiles: string[] = []
-
   try {
     const headersList = await headers()
     const ip = headersList.get("x-forwarded-for") || "unknown"
     const rl = checkRateLimit(`upload:${ip}`, 10, 60000)
     if (!rl.allowed) {
-      return NextResponse.json(
-        { error: "Terlalu banyak upload. Coba lagi nanti." },
-        { status: 429 }
-      )
+      return NextResponse.json({ error: "Terlalu banyak upload. Coba lagi nanti." }, { status: 429 })
     }
 
     const session = await auth()
@@ -46,26 +41,19 @@ export async function POST(request: Request) {
     })
 
     if (!user || user.status !== "ACTIVE") {
-      return NextResponse.json(
-        { error: "Akun belum disetujui atau dinonaktifkan" },
-        { status: 403 }
-      )
+      return NextResponse.json({ error: "Akun belum disetujui atau dinonaktifkan" }, { status: 403 })
     }
 
     const formData = await request.formData()
-
     const pdfFile = formData.get("pdf") as File | null
     const coverFile = formData.get("cover") as File | null
-    const title = formData.get("title") as string | null
-    const author = formData.get("author") as string | null
-    const description = formData.get("description") as string | null
+    const title = (formData.get("title") as string) || ""
+    const author = (formData.get("author") as string) || ""
+    const description = formData.get("description") as string | undefined
 
-    const parsed = uploadBookSchema.safeParse({ title, author, description })
+    const parsed = uploadBookSchema.safeParse({ title, author, description: description || undefined })
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0].message },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: parsed.error.issues[0].message }, { status: 400 })
     }
 
     if (!pdfFile) {
@@ -77,50 +65,46 @@ export async function POST(request: Request) {
     }
 
     if (pdfFile.size > MAX_PDF_SIZE) {
-      return NextResponse.json(
-        { error: "Ukuran PDF maksimal 50MB" },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: "Ukuran PDF maksimal 50MB" }, { status: 400 })
     }
 
-    const baseDir = path.join(process.cwd(), "uploads")
+    const pdfName = `${randomId()}.pdf`
+    const pdfPath = `pdf/${pdfName}`
+    const { error: pdfError } = await supabaseAdmin.storage
+      .from("ebooks")
+      .upload(pdfPath, pdfFile, { contentType: "application/pdf" })
 
-    const pdfDir = path.join(baseDir, "pdf")
-    await mkdir(pdfDir, { recursive: true })
-    const pdfExt = path.extname(pdfFile.name) || ".pdf"
-    const pdfName = `${randomId()}${pdfExt}`
-    const pdfPath = path.join(pdfDir, pdfName)
-    const pdfBuffer = Buffer.from(await pdfFile.arrayBuffer())
-    await writeFile(pdfPath, pdfBuffer)
-    savedFiles.push(pdfPath)
+    if (pdfError) {
+      return NextResponse.json({ error: "Gagal upload PDF" }, { status: 500 })
+    }
+
+    const { data: pdfUrl } = supabaseAdmin.storage.from("ebooks").getPublicUrl(pdfPath)
 
     let coverUrl: string | null = null
     if (coverFile && coverFile.size > 0) {
       if (!ALLOWED_COVER_TYPES.includes(coverFile.type)) {
-        await cleanupFiles(savedFiles)
-        return NextResponse.json(
-          { error: "Cover harus JPG, PNG, atau WebP" },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: "Cover harus JPG, PNG, atau WebP" }, { status: 400 })
       }
       if (coverFile.size > MAX_COVER_SIZE) {
-        await cleanupFiles(savedFiles)
-        return NextResponse.json(
-          { error: "Ukuran cover maksimal 5MB" },
-          { status: 400 }
-        )
+        return NextResponse.json({ error: "Ukuran cover maksimal 5MB" }, { status: 400 })
       }
 
-      const coverDir = path.join(baseDir, "covers")
-      await mkdir(coverDir, { recursive: true })
-      const coverExt = path.extname(coverFile.name) || ".png"
-      const coverName = `${randomId()}${coverExt}`
-      const coverPath = path.join(coverDir, coverName)
-      const coverBuffer = Buffer.from(await coverFile.arrayBuffer())
-      await writeFile(coverPath, coverBuffer)
-      savedFiles.push(coverPath)
+      const coverExt = coverFile.name.split(".").pop() || "png"
+      const coverName = `${randomId()}.${coverExt}`
+      const coverPath = `covers/${coverName}`
 
-      coverUrl = `/api/files/covers/${coverName}`
+      const { error: coverError } = await supabaseAdmin.storage
+        .from("ebooks")
+        .upload(coverPath, coverFile, {
+          contentType: `image/${coverExt === "jpg" ? "jpeg" : coverExt}`,
+        })
+
+      if (coverError) {
+        return NextResponse.json({ error: "Gagal upload cover" }, { status: 500 })
+      }
+
+      const { data: coverData } = supabaseAdmin.storage.from("ebooks").getPublicUrl(coverPath)
+      coverUrl = coverData.publicUrl
     }
 
     const book = await prisma.book.create({
@@ -129,7 +113,7 @@ export async function POST(request: Request) {
         author: parsed.data.author,
         description: parsed.data.description ?? null,
         coverUrl,
-        fileUrl: `/api/files/pdf/${pdfName}`,
+        fileUrl: pdfUrl.publicUrl,
         fileSize: pdfFile.size,
         uploaderId: session.user.id,
         status: "APPROVED",
@@ -139,18 +123,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ message: "Buku berhasil diupload", bookId: book.id }, { status: 201 })
   } catch (error) {
     console.error("Upload error:", error)
-    await cleanupFiles(savedFiles)
-    return NextResponse.json(
-      { error: "Terjadi kesalahan saat upload" },
-      { status: 500 }
-    )
-  }
-}
-
-async function cleanupFiles(files: string[]) {
-  for (const file of files) {
-    try {
-      await unlink(file)
-    } catch {}
+    return NextResponse.json({ error: "Terjadi kesalahan saat upload" }, { status: 500 })
   }
 }

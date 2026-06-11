@@ -63,7 +63,9 @@ export default function ReadPage() {
         }
 
         const doc = await pdfjsLib.getDocument({
-          url: window.location.origin + data.fileUrl,
+          url: data.fileUrl.startsWith("http")
+            ? data.fileUrl
+            : window.location.origin + data.fileUrl,
         }).promise
 
         if (!cancelled) {
