@@ -166,7 +166,7 @@ export default function ContactPage() {
       <div className="text-center">
         <p className="text-sm text-muted-foreground">
           Dibangun dengan <Heart className="inline h-3.5 w-3.5 text-destructive" /> oleh{" "}
-          <span className="font-semibold text-foreground">Imam Suranda</span>
+          <span className="font-semibold text-foreground">Teuku Imam Suranda</span>
         </p>
       </div>
     </div>
