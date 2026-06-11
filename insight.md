@@ -778,4 +778,58 @@ Ini belum kita implementasikan di upload form (akan bocor memory kecil), tapi pa
 
 ---
 
+## Insight #9 — Supabase + Prisma 7 + Vercel: Pelajaran Koneksi Database
+
+**Tanggal**: Deploy production  
+**Konteks**: Deploy ke Vercel, database tidak reachable berkali-kali.
+
+### 9.1 Akar Masalah: Transaction Mode vs Session Mode Pooling
+
+Supabase menyediakan 2 mode koneksi pooler:
+
+| Mode | Port | Parameter | Cocok untuk |
+|------|------|-----------|-------------|
+| **Transaction** | 6543 | `?pgbouncer=true` | Serverless function sederhana (single query per transaction) |
+| **Session** | 5432 | (tanpa parameter) | Aplikasi yang butuh session persistent (Prisma) |
+
+**KESALAHAN**: Saya pakai port 6543 (`pgbouncer=true`) dengan `PrismaPg`. Ini TIDAK KOMPATIBEL karena:
+- Transaction mode menolak **prepared statements**
+- Prisma sangat bergantung pada prepared statements
+- PrismaPg (pg driver) butuh session mode
+
+**SOLUSI YANG BENAR**: Pakai session mode pooler port **5432** TANPA parameter `pgbouncer=true`.
+
+### 9.2 Kenapa Direct Host (`db.xxx.supabase.co`) Tidak Ada?
+
+Free tier Supabase **tidak selalu mengekspos direct connection**. DNS lookup untuk `db.wlnrwuqshekrvjxpkpgz.supabase.co` return "No answer" — hostname tidak ada.
+
+Solusi: selalu pakai pooler host (`aws-1-ap-southeast-1.pooler.supabase.co`), pilih port yang sesuai (5432 untuk session, 6543 untuk transaction).
+
+### 9.3 Rule of Thumb Koneksi Supabase + Prisma
+
+```
+✅ BENAR:  pooler.supabase.co:5432 (session mode, TANPA pgbouncer=true)
+✅ BENAR:  pooler.supabase.co:5432 (session mode, untuk PrismaPg)
+❌ SALAH:  pooler.supabase.co:6543?pgbouncer=true (transaction mode, PrismaPg tidak kompatibel)
+❌ SALAH:  db.xxx.supabase.co (tidak selalu ada di free tier)
+```
+
+### 9.4 Jangan Tebak Format Connection String
+
+Supabase dashboard memberikan connection string yang persis. **Jangan dimodifikasi**. Copy dari:
+- **Settings → Database → Connection string → URI** (port 5432)
+- Atau **Connect → ORM → Prisma**
+
+Kalau dari situ formatnya beda, **IKUTI PERSIS**.
+
+### 9.5 Postinstall di Vercel
+
+Vercel tidak auto-run `prisma generate`. Harus ditambah di `package.json`:
+```json
+"postinstall": "npx prisma generate"
+```
+Ini memastikan Prisma client di-generate setiap kali dependencies di-install di Vercel.
+
+---
+
 *Insight berikutnya akan ditambahkan saat kita membangun fitur berikutnya.*
