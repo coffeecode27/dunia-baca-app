@@ -29,7 +29,7 @@ export default function ReadPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const renderTaskRef = useRef<any>(null)
   const [showThumbnails, setShowThumbnails] = useState(false)
-  const [zoom, setZoom] = useState(1)
+  const [zoom, setZoom] = useState(1.5)
   const thumbCanvases = useRef<Map<number, HTMLCanvasElement>>(new Map())
 
   useEffect(() => {
@@ -205,14 +205,14 @@ export default function ReadPage() {
 
         <div className="flex items-center gap-1 shrink-0">
           <button
-            onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}
+            onClick={() => setZoom((z) => Math.max(0.75, z - 0.25))}
             className="rounded border border-border px-1.5 py-0.5 hover:bg-muted text-xs font-semibold"
           >
             −
           </button>
           <span className="text-xs font-semibold w-10 text-center">{Math.round(zoom * 100)}%</span>
           <button
-            onClick={() => setZoom((z) => Math.min(3, z + 0.25))}
+            onClick={() => setZoom((z) => Math.min(4, z + 0.25))}
             className="rounded border border-border px-1.5 py-0.5 hover:bg-muted text-xs font-semibold"
           >
             +
@@ -245,7 +245,7 @@ export default function ReadPage() {
       <div className="min-w-0 flex-1">
         <div
           ref={containerRef}
-          className="overflow-hidden rounded-md border-2 border-border bg-white shadow-[4px_4px_0px_0px_#000000] max-w-3xl mx-auto"
+          className="overflow-hidden rounded-md border-2 border-border bg-white shadow-[4px_4px_0px_0px_#000000] max-w-5xl mx-auto"
         >
           <canvas ref={canvasRef} />
         </div>
