@@ -98,6 +98,35 @@ export default function ReadPage() {
 
   function goToPage(num: number) { if (num < 1 || num > totalPages) return; setPageNum(num); saveProgress(num) }
 
+  // Keyboard navigation
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "ArrowRight") goToPage(pageNum + 1)
+      if (e.key === "ArrowLeft") goToPage(pageNum - 1)
+    }
+    window.addEventListener("keydown", handleKey)
+    return () => window.removeEventListener("keydown", handleKey)
+  }, [pageNum, totalPages])
+
+  // Swipe navigation
+  const touchStart = useRef(0)
+  useEffect(() => {
+    function handleTouchStart(e: TouchEvent) { touchStart.current = e.touches[0].clientX }
+    function handleTouchEnd(e: TouchEvent) {
+      const diff = touchStart.current - e.changedTouches[0].clientX
+      if (Math.abs(diff) > 60) {
+        if (diff > 0) goToPage(pageNum + 1)
+        else goToPage(pageNum - 1)
+      }
+    }
+    document.addEventListener("touchstart", handleTouchStart, { passive: true })
+    document.addEventListener("touchend", handleTouchEnd, { passive: true })
+    return () => {
+      document.removeEventListener("touchstart", handleTouchStart)
+      document.removeEventListener("touchend", handleTouchEnd)
+    }
+  }, [pageNum, totalPages])
+
   if (loading) return <div className="flex min-h-[60vh] items-center justify-center"><p className="font-semibold">Memuat...</p></div>
   if (error) return <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4"><p className="font-semibold text-destructive">{error}</p><Link href={`/book/${id}`} className={cn(buttonVariants({ variant: "outline" }))}>Kembali</Link></div>
 
