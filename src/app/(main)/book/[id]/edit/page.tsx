@@ -55,7 +55,7 @@ export default function EditBookPage() {
     }
 
     toast.success("Buku berhasil diupdate")
-    router.push(`/book/${id}`)
+    router.push(`/book/${id}?t=${Date.now()}`)
     router.refresh()
   }
 
