@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react"
 import type * as pdfjsDist from "pdfjs-dist"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, ChevronRight, PanelLeft, ZoomIn, ZoomOut } from "lucide-react"
+import { ChevronLeft, ChevronRight, PanelLeft } from "lucide-react"
 import Link from "next/link"
 
 let pdfjsLib: typeof pdfjsDist | null = null
@@ -28,50 +28,30 @@ export default function ReadPage() {
   const [error, setError] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const renderTaskRef = useRef<any>(null)
-  const [showThumbnails, setShowThumbnails] = useState(false)
+  const [showThumbnails, setShowThumbnails] = useState(true)
   const [zoom, setZoom] = useState(1.5)
-  const thumbCanvases = useRef<Map<number, HTMLCanvasElement>>(new Map())
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login")
-    }
+    if (status === "unauthenticated") router.push("/login")
   }, [status, router])
 
   useEffect(() => {
     let cancelled = false
-
     async function loadPdf() {
       try {
         const res = await fetch(`/api/books/${id}`)
         const data = await res.json()
-
-        if (data.error) {
-          if (!cancelled) setError(data.error)
-          if (!cancelled) setLoading(false)
-          return
-        }
-
+        if (data.error) { if (!cancelled) { setError(data.error); setLoading(false) } return }
         if (!cancelled) setBook(data)
-
-        if (!data.fileUrl) {
-          if (!cancelled) setError("File tidak ditemukan")
-          if (!cancelled) setLoading(false)
-          return
-        }
-
+        if (!data.fileUrl) { if (!cancelled) { setError("File tidak ditemukan"); setLoading(false) } return }
         if (!pdfjsLib) {
           const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs")
           pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
           pdfjsLib = pdfjs
         }
-
         const doc = await pdfjsLib.getDocument({
-          url: data.fileUrl.startsWith("http")
-            ? data.fileUrl
-            : window.location.origin + data.fileUrl,
+          url: data.fileUrl.startsWith("http") ? data.fileUrl : window.location.origin + data.fileUrl,
         }).promise
-
         if (!cancelled) {
           setPdfDoc(doc)
           setTotalPages(doc.numPages)
@@ -79,80 +59,49 @@ export default function ReadPage() {
           setLoading(false)
         }
       } catch (err) {
-        if (!cancelled) {
-          console.error(err)
-          setError("Gagal memuat PDF")
-          setLoading(false)
-        }
+        if (!cancelled) { console.error(err); setError("Gagal memuat PDF"); setLoading(false) }
       }
     }
-
     if (status !== "loading" && status !== "unauthenticated") loadPdf()
-
     return () => {
       cancelled = true
-      if (renderTaskRef.current) {
-        renderTaskRef.current.cancel()
-        renderTaskRef.current = null
-      }
-      if (pdfDoc) {
-        pdfDoc.destroy()
-        setPdfDoc(null)
-      }
+      if (renderTaskRef.current) { renderTaskRef.current.cancel(); renderTaskRef.current = null }
+      if (pdfDoc) { pdfDoc.destroy(); setPdfDoc(null) }
     }
   }, [id, status])
 
-  const renderPage = useCallback(
-    (num: number) => {
-      if (!pdfDoc || !canvasRef.current) return
-      
-      if (renderTaskRef.current) {
-        renderTaskRef.current.cancel()
-        renderTaskRef.current = null
-      }
-
-      const canvas = canvasRef.current
-      pdfDoc.getPage(num).then((page: any) => {
-        const container = containerRef.current
-        if (!container) return
-
-        const dpr = window.devicePixelRatio || 1
-        const containerWidth = container.clientWidth
-        const baseViewport = page.getViewport({ scale: 1 })
-        const scale = (containerWidth * dpr * zoom) / baseViewport.width
-        const scaledViewport = page.getViewport({ scale })
-
-        canvas.width = scaledViewport.width
-        canvas.height = scaledViewport.height
-        canvas.style.width = `${(scaledViewport.width / dpr)}px`
-        canvas.style.height = "auto"
-
-        renderTaskRef.current = page.render({
-          canvas,
-          viewport: scaledViewport,
-        })
-      })
-    },
-    [pdfDoc, zoom]
-  )
+  const renderPage = useCallback((num: number) => {
+    if (!pdfDoc || !canvasRef.current) return
+    if (renderTaskRef.current) { renderTaskRef.current.cancel(); renderTaskRef.current = null }
+    const canvas = canvasRef.current
+    pdfDoc.getPage(num).then((page: any) => {
+      const container = containerRef.current
+      if (!container) return
+      const dpr = window.devicePixelRatio || 1
+      const containerWidth = container.clientWidth
+      const baseViewport = page.getViewport({ scale: 1 })
+      const scale = (containerWidth * dpr * zoom) / baseViewport.width
+      const scaledViewport = page.getViewport({ scale })
+      canvas.width = scaledViewport.width
+      canvas.height = scaledViewport.height
+      canvas.style.width = `${(scaledViewport.width / dpr)}px`
+      canvas.style.height = "auto"
+      renderTaskRef.current = page.render({ canvas, viewport: scaledViewport })
+    })
+  }, [pdfDoc, zoom])
 
   useEffect(() => {
-    if (pageNum > 0 && pageNum <= totalPages) {
-      renderPage(pageNum)
-    }
+    if (pageNum > 0 && pageNum <= totalPages) renderPage(pageNum)
   }, [pageNum, totalPages, renderPage])
 
   useEffect(() => {
-    function handleResize() {
-      renderPage(pageNum)
-    }
+    function handleResize() { renderPage(pageNum) }
     window.addEventListener("resize", handleResize)
     return () => window.removeEventListener("resize", handleResize)
   }, [pageNum, renderPage])
 
   function saveProgress(page: number) {
     if (!session?.user || !id) return
-
     clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
       fetch("/api/reading-progress", {
@@ -169,129 +118,74 @@ export default function ReadPage() {
     saveProgress(num)
   }
 
-  if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <p className="font-semibold">Memuat PDF...</p>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
-        <p className="font-semibold text-destructive">{error}</p>
-        <Link href={`/book/${id}`} className={cn(buttonVariants({ variant: "outline" }))}>
-          Kembali
-        </Link>
-      </div>
-    )
-  }
+  if (loading) return <div className="flex min-h-[60vh] items-center justify-center"><p className="font-semibold">Memuat...</p></div>
+  if (error) return (
+    <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4">
+      <p className="font-semibold text-destructive">{error}</p>
+      <Link href={`/book/${id}`} className={cn(buttonVariants({ variant: "outline" }))}>Kembali</Link>
+    </div>
+  )
 
   return (
-    <div className="space-y-3">
-      {/* Top bar: title + zoom + page list toggle */}
-      <div className="flex items-center justify-between gap-2 rounded-md border-2 border-border bg-card p-2 shadow-[2px_2px_0px_0px_#000000]">
-        <div className="flex items-center gap-2 min-w-0">
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={() => setShowThumbnails(!showThumbnails)}
-          >
-            <PanelLeft className="h-4 w-4" />
-          </Button>
-          <h2 className="truncate text-sm font-semibold">{book?.title}</h2>
+    <div className="flex gap-3">
+      {/* Thumbnail sidebar */}
+      {showThumbnails && (
+        <div className="w-28 shrink-0 flex flex-col gap-0.5 overflow-y-auto rounded-md border-2 border-border bg-card p-1 shadow-[2px_2px_0px_0px_#000000]" style={{ maxHeight: "80vh", position: "sticky", top: "4rem" }}>
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              onClick={() => goToPage(p)}
+              className={`rounded px-2 py-1 text-left text-xs font-semibold transition-colors ${
+                p === pageNum ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+              }`}
+            >
+              Hal. {p}
+            </button>
+          ))}
         </div>
+      )}
 
-        <div className="flex items-center gap-1 shrink-0">
-          <button
-            onClick={() => setZoom((z) => Math.max(0.75, z - 0.25))}
-            className="rounded border border-border px-1.5 py-0.5 hover:bg-muted text-xs font-semibold"
-          >
-            −
-          </button>
-          <span className="text-xs font-semibold w-10 text-center">{Math.round(zoom * 100)}%</span>
-          <button
-            onClick={() => setZoom((z) => Math.min(4, z + 0.25))}
-            className="rounded border border-border px-1.5 py-0.5 hover:bg-muted text-xs font-semibold"
-          >
-            +
-          </button>
-        </div>
-      </div>
-
-      <div className="flex gap-3">
-        {showThumbnails && (
-          <div className="w-32 shrink-0 flex-col gap-1 overflow-y-auto rounded-md border-2 border-border bg-card p-1 shadow-[2px_2px_0px_0px_#000000] flex" style={{ maxHeight: "70vh" }}>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-              <button
-                key={p}
-                onClick={() => {
-                  goToPage(p)
-                  setShowThumbnails(false)
-                }}
-                className={`rounded p-1 text-xs font-semibold transition-colors ${
-                  p === pageNum
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
-              >
-                Hal. {p}
-              </button>
-            ))}
+      {/* Main area */}
+      <div className="min-w-0 flex-1 space-y-3">
+        {/* Top bar */}
+        <div className="flex items-center justify-between gap-2 rounded-md border-2 border-border bg-card p-2 shadow-[2px_2px_0px_0px_#000000]">
+          <div className="flex items-center gap-2 min-w-0">
+            <Button variant="outline" size="icon-sm" onClick={() => setShowThumbnails(!showThumbnails)}>
+              <PanelLeft className="h-4 w-4" />
+            </Button>
+            <h2 className="truncate text-sm font-semibold">{book?.title}</h2>
           </div>
-        )}
+          <div className="flex items-center gap-1 shrink-0">
+            <button onClick={() => setZoom(z => Math.max(0.75, z - 0.25))} className="rounded border border-border px-1.5 py-0.5 hover:bg-muted text-xs font-semibold">−</button>
+            <span className="text-xs font-semibold w-10 text-center">{Math.round(zoom * 100)}%</span>
+            <button onClick={() => setZoom(z => Math.min(4, z + 0.25))} className="rounded border border-border px-1.5 py-0.5 hover:bg-muted text-xs font-semibold">+</button>
+          </div>
+        </div>
 
-      <div className="min-w-0 flex-1">
-        <div
-          ref={containerRef}
-          className="overflow-hidden rounded-md border-2 border-border bg-white shadow-[4px_4px_0px_0px_#000000] max-w-5xl mx-auto"
-        >
+        {/* PDF Canvas */}
+        <div ref={containerRef} className="w-full">
           <canvas ref={canvasRef} />
         </div>
-      </div>
-      </div>
 
-      {/* Bottom pagination */}
-      <div className="flex items-center justify-center gap-2 rounded-md border-2 border-border bg-card p-2 shadow-[2px_2px_0px_0px_#000000]">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => goToPage(pageNum - 1)}
-          disabled={pageNum <= 1}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={pageNum}
-          onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, "")
-            if (val === "") { setPageNum(1); return }
-            const num = Number(val)
-            if (num >= 1 && num <= totalPages) goToPage(num)
-          }}
-          onFocus={(e) => e.target.select()}
-          className="h-8 w-16 rounded-md border-2 border-border bg-background text-center text-sm font-semibold shadow-[2px_2px_0px_0px_#000000] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        />
-        <span className="text-xs text-muted-foreground">/ {totalPages}</span>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => goToPage(pageNum + 1)}
-          disabled={pageNum >= totalPages}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
+        {/* Bottom pagination */}
+        <div className="flex items-center justify-center gap-2 rounded-md border-2 border-border bg-card p-2 shadow-[2px_2px_0px_0px_#000000]">
+          <Button variant="outline" size="icon-sm" onClick={() => goToPage(pageNum - 1)} disabled={pageNum <= 1}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <input
+            type="text" inputMode="numeric" value={pageNum}
+            onChange={(e) => { const v = e.target.value.replace(/\D/g, ""); if (!v) { setPageNum(1); return }; const n = Number(v); if (n >= 1 && n <= totalPages) goToPage(n) }}
+            onFocus={e => e.target.select()}
+            className="h-8 w-16 rounded-md border-2 border-border bg-background text-center text-sm font-semibold shadow-[2px_2px_0px_0px_#000000] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          />
+          <span className="text-xs text-muted-foreground">/ {totalPages}</span>
+          <Button variant="outline" size="icon-sm" onClick={() => goToPage(pageNum + 1)} disabled={pageNum >= totalPages}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
 
-      <Link
-        href={`/book/${id}`}
-        className={cn(buttonVariants({ variant: "outline" }), "w-full")}
-      >
-        Kembali ke Detail
-      </Link>
+        <Link href={`/book/${id}`} className={cn(buttonVariants({ variant: "outline" }), "w-full")}>Kembali ke Detail</Link>
+      </div>
     </div>
   )
 }
