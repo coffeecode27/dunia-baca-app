@@ -10,11 +10,11 @@ import { cn } from "@/lib/utils"
 import { Upload, Library, BookMarked, SearchX } from "lucide-react"
 
 interface LibraryPageProps {
-  searchParams: Promise<{ search?: string; tab?: string }>
+  searchParams: Promise<{ search?: string; tab?: string; category?: string }>
 }
 
 export default async function LibraryPage({ searchParams }: LibraryPageProps) {
-  const { search, tab = "umum" } = await searchParams
+  const { search, tab = "umum", category } = await searchParams
   const session = await auth()
 
   const isPrivate = tab === "koleksi"
@@ -37,6 +37,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
             ],
           }
         : {}),
+      ...(category ? { categoryId: category } : {}),
     },
     select: {
       id: true,

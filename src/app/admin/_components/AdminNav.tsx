@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { LayoutDashboard, BookOpen, Users, ArrowLeft } from "lucide-react"
+import { LayoutDashboard, BookOpen, Users, Tags, ArrowLeft } from "lucide-react"
 
 export function AdminNav() {
   const pathname = usePathname()
@@ -12,6 +12,7 @@ export function AdminNav() {
     { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
     { href: "/admin/books", label: "Buku", icon: BookOpen },
     { href: "/admin/users", label: "User", icon: Users },
+    { href: "/admin/categories", label: "Kategori", icon: Tags },
   ]
 
   return (
