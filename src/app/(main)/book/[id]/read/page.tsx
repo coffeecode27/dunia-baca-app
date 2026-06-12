@@ -31,6 +31,76 @@ export default function ReadPage() {
   const [showThumbnails, setShowThumbnails] = useState(false)
   const thumbCanvases = useRef<Map<number, HTMLCanvasElement>>(new Map())
 
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login")
+    }
+  }, [status, router])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadPdf() {
+      try {
+        const res = await fetch(`/api/books/${id}`)
+        const data = await res.json()
+
+        if (data.error) {
+          if (!cancelled) setError(data.error)
+          if (!cancelled) setLoading(false)
+          return
+        }
+
+        if (!cancelled) setBook(data)
+
+        if (!data.fileUrl) {
+          if (!cancelled) setError("File tidak ditemukan")
+          if (!cancelled) setLoading(false)
+          return
+        }
+
+        if (!pdfjsLib) {
+          const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs")
+          pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+          pdfjsLib = pdfjs
+        }
+
+        const doc = await pdfjsLib.getDocument({
+          url: data.fileUrl.startsWith("http")
+            ? data.fileUrl
+            : window.location.origin + data.fileUrl,
+        }).promise
+
+        if (!cancelled) {
+          setPdfDoc(doc)
+          setTotalPages(doc.numPages)
+          setPageNum(Math.min(startFromPage, doc.numPages))
+          setLoading(false)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error(err)
+          setError("Gagal memuat PDF")
+          setLoading(false)
+        }
+      }
+    }
+
+    if (status !== "loading" && status !== "unauthenticated") loadPdf()
+
+    return () => {
+      cancelled = true
+      if (renderTaskRef.current) {
+        renderTaskRef.current.cancel()
+        renderTaskRef.current = null
+      }
+      if (pdfDoc) {
+        pdfDoc.destroy()
+        setPdfDoc(null)
+      }
+    }
+  }, [id, status])
+
   const renderPage = useCallback(
     (num: number) => {
       if (!pdfDoc || !canvasRef.current) return
