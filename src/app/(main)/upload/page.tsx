@@ -54,6 +54,12 @@ export default function UploadPage() {
   const [coverError, setCoverError] = useState<string | null>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
+  const [allCategories, setAllCategories] = useState<{ id: string; name: string }[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+
+  useEffect(() => {
+    fetch("/api/categories").then(r => r.json()).then(setAllCategories)
+  }, [])
 
   const form = useForm<UploadBookInput>({
     resolver: zodResolver(uploadBookSchema),
@@ -300,6 +306,7 @@ export default function UploadPage() {
           title: values.title,
           author: values.author,
           description: values.description || undefined,
+          categoryIds: selectedCategories,
           pdf: {
             path: signedUpload.pdf.path,
             size: pdfFile.size,
@@ -402,6 +409,31 @@ export default function UploadPage() {
                   </FormItem>
                 )}
               />
+
+              <div className="space-y-2">
+                <FormLabel>Kategori</FormLabel>
+                <div className="flex flex-wrap gap-2">
+                  {allCategories.map(cat => (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault()
+                        setSelectedCategories(prev =>
+                          prev.includes(cat.id) ? prev.filter(c => c !== cat.id) : [...prev, cat.id]
+                        )
+                      }}
+                      className={`rounded-md border-2 px-3 py-1.5 text-xs font-semibold transition-all ${
+                        selectedCategories.includes(cat.id)
+                          ? "border-border bg-primary text-primary-foreground shadow-[2px_2px_0px_0px_#000000]"
+                          : "border-border bg-card text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
               <div className="space-y-2">
                 <FormLabel>File PDF *</FormLabel>

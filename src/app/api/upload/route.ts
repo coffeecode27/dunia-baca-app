@@ -23,6 +23,7 @@ type CompletedUploadRequest = {
   title?: string
   author?: string
   description?: string
+  categoryIds?: string[]
   pdf?: {
     path?: string
     size?: number
@@ -207,6 +208,12 @@ async function handleCompletedUpload(request: Request, uploaderId: string) {
       status: "APPROVED",
     },
   })
+
+  if (body.categoryIds?.length) {
+    await prisma.bookCategory.createMany({
+      data: body.categoryIds.map(catId => ({ bookId: book.id, categoryId: catId })),
+    })
+  }
 
   return NextResponse.json({ message: "Buku berhasil diupload", bookId: book.id }, { status: 201 })
 }
