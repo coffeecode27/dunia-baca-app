@@ -78,12 +78,15 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
         )}
       </div>
 
-      {/* Search */}
-      <Suspense fallback={<div className="h-10 animate-pulse rounded bg-muted" />}>
-        <SearchBar />
-      </Suspense>
-
-      <CategoryFilter selected={category} search={search} />
+      {/* Search + Filter */}
+      <div className="flex gap-2">
+        <div className="flex-1">
+          <Suspense fallback={<div className="h-10 animate-pulse rounded bg-muted" />}>
+            <SearchBar />
+          </Suspense>
+        </div>
+        <CategoryFilter selected={category} search={search} />
+      </div>
 
       {/* Results */}
       <Suspense fallback={

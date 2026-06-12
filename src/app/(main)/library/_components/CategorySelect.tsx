@@ -22,7 +22,7 @@ export function CategorySelect({ categories, selected, search }: Props) {
     <select
       value={selected || ""}
       onChange={(e) => handleChange(e.target.value)}
-      className="h-10 w-full rounded-md border-2 border-border bg-background px-3 text-sm font-semibold shadow-[2px_2px_0px_0px_#000000] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+      className="h-10 w-44 shrink-0 rounded-md border-2 border-border bg-background px-3 text-sm font-semibold shadow-[2px_2px_0px_0px_#000000] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
     >
       <option value="">Semua Kategori</option>
       {categories.map((cat) => (
