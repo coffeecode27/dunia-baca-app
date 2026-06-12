@@ -32,8 +32,8 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       ...(search
         ? {
             OR: [
-              { title: { contains: search } },
-              { author: { contains: search } },
+              { title: { contains: search, mode: "insensitive" } },
+              { author: { contains: search, mode: "insensitive" } },
             ],
           }
         : {}),
