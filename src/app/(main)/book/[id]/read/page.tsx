@@ -28,7 +28,7 @@ export default function ReadPage() {
   const [error, setError] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const renderTaskRef = useRef<any>(null)
-  const [showSidebar, setShowSidebar] = useState(true)
+  const [showSidebar, setShowSidebar] = useState(false)
   const [zoom, setZoom] = useState(1)
 
   useEffect(() => { if (status === "unauthenticated") router.push("/login") }, [status, router])
