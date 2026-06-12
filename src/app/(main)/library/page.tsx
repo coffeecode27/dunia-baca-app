@@ -7,7 +7,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { SearchBar } from "./_components/SearchBar"
 import { BookCard } from "@/components/books/BookCard"
 import { cn } from "@/lib/utils"
-import { Upload, Library, BookMarked } from "lucide-react"
+import { Upload, Library, BookMarked, SearchX } from "lucide-react"
 
 interface LibraryPageProps {
   searchParams: Promise<{ search?: string; tab?: string }>
@@ -77,39 +77,67 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       </div>
 
       {/* Search */}
-      <Suspense>
+      <Suspense fallback={<div className="h-10 animate-pulse rounded bg-muted" />}>
         <SearchBar />
       </Suspense>
 
-      {/* Book Grid */}
-      {books.length > 0 ? (
+      {/* Results */}
+      <Suspense fallback={
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-          {books.map((book) => (
-            <BookCard
-              key={book.id}
-              book={book}
-              readerCount={book._count.readingProgress}
-            />
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <div className="aspect-[3/4] animate-pulse rounded-md bg-muted" />
+              <div className="h-3 animate-pulse rounded bg-muted" />
+              <div className="h-2 w-2/3 animate-pulse rounded bg-muted" />
+            </div>
           ))}
         </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <div className="rounded-full bg-muted p-6">
-            {isPrivate ? (
-              <BookMarked className="h-12 w-12 text-muted-foreground/60" />
-            ) : (
-              <Library className="h-12 w-12 text-muted-foreground/60" />
-            )}
-          </div>
-          <h2 className="mt-6 text-lg font-semibold">
-            {isPrivate ? "Belum ada ebook" : "Belum ada ebook"}
-          </h2>
-          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-            {isPrivate
-              ? "Kamu belum mengupload ebook apapun. Mulai berbagi literasi sekarang!"
-              : "Belum ada ebook yang tersedia. Jadilah yang pertama mengupload ebook untuk berbagi literasi!"}
-          </p>
+      }>
+        <BookResults books={books} isPrivate={isPrivate} search={search} session={!!session} />
+      </Suspense>
+    </div>
+  )
+}
+
+function BookResults({ books, isPrivate, search, session }: { books: any[]; isPrivate: boolean; search?: string; session: boolean }) {
+  if (books.length > 0) {
+    return (
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+        {books.map((book: any) => (
+          <BookCard key={book.id} book={book} readerCount={book._count.readingProgress} />
+        ))}
+      </div>
+    )
+  }
+
+  if (search) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <div className="rounded-full bg-muted p-6">
+          <SearchX className="h-12 w-12 text-muted-foreground/60" />
         </div>
+        <h2 className="mt-6 text-lg font-semibold">Tidak ditemukan</h2>
+        <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+          Tidak ada ebook dengan kata kunci &quot;{search}&quot;. Coba kata kunci lain atau jelajahi semua koleksi.
+        </p>
+        <Link href="/library" className={cn(buttonVariants({ variant: "outline" }), "mt-4")}>
+          Lihat Semua
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center">
+      <div className="rounded-full bg-muted p-6">
+        {isPrivate ? <BookMarked className="h-12 w-12 text-muted-foreground/60" /> : <Library className="h-12 w-12 text-muted-foreground/60" />}
+      </div>
+      <h2 className="mt-6 text-lg font-semibold">Belum ada ebook</h2>
+      <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+        {isPrivate ? "Kamu belum mengupload ebook apapun. Mulai berbagi literasi sekarang!" : "Belum ada ebook yang tersedia. Jadilah yang pertama mengupload ebook untuk berbagi literasi!"}
+      </p>
+      {session && (
+        <Link href="/upload" className={cn(buttonVariants(), "mt-4")}>Upload Ebook</Link>
       )}
     </div>
   )
