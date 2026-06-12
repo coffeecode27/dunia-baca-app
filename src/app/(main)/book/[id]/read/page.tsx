@@ -79,7 +79,7 @@ export default function ReadPage() {
       canvas.height = scaledViewport.height
       canvas.style.width = `${(scaledViewport.width / dpr)}px`
       canvas.style.height = "auto"
-      canvas.style.maxWidth = "100%"
+
       renderTaskRef.current = page.render({ canvas, viewport: scaledViewport })
     })
   }, [pdfDoc, zoom])
@@ -103,7 +103,7 @@ export default function ReadPage() {
   return (
     <div className="flex gap-3">
       {showSidebar && (
-        <div className="hidden sm:flex w-28 shrink-0 flex-col gap-0.5 overflow-y-auto rounded-md border-2 border-border bg-card p-1 shadow-[2px_2px_0px_0px_#000000]" style={{ maxHeight: "80vh", position: "sticky", top: "4rem" }}>
+        <div className="flex w-28 shrink-0 flex-col gap-0.5 overflow-y-auto rounded-md border-2 border-border bg-card p-1 shadow-[2px_2px_0px_0px_#000000]" style={{ maxHeight: "80vh", position: "sticky", top: "4rem" }}>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <button key={p} onClick={() => goToPage(p)} className={`rounded px-2 py-1 text-left text-xs font-semibold ${p === pageNum ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>Hal. {p}</button>
           ))}
@@ -122,7 +122,7 @@ export default function ReadPage() {
           </div>
         </div>
 
-        <div ref={containerRef} className="w-full rounded-md border-2 border-border bg-white shadow-[2px_2px_0px_0px_#000000] p-1">
+        <div ref={containerRef} className="w-full overflow-x-auto rounded-md border-2 border-border bg-white shadow-[2px_2px_0px_0px_#000000] p-1">
           <canvas ref={canvasRef} />
         </div>
 
