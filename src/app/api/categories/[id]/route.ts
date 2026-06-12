@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import crypto from "node:crypto"
 
 export async function POST(request: Request) {
   const session = await auth()
@@ -9,7 +10,8 @@ export async function POST(request: Request) {
   }
   const { name } = await request.json()
   if (!name) return NextResponse.json({ error: "Nama wajib" }, { status: 400 })
-  const cat = await prisma.category.create({ data: { name } })
+  const id = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "")
+  const cat = await prisma.category.create({ data: { id, name } })
   return NextResponse.json(cat, { status: 201 })
 }
 
