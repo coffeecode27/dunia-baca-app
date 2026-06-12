@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react"
 import type * as pdfjsDist from "pdfjs-dist"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, ChevronRight, PanelLeft } from "lucide-react"
+import { ChevronLeft, ChevronRight, PanelLeft, ZoomIn, ZoomOut } from "lucide-react"
 import Link from "next/link"
 
 let pdfjsLib: typeof pdfjsDist | null = null
@@ -29,6 +29,7 @@ export default function ReadPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
   const renderTaskRef = useRef<any>(null)
   const [showThumbnails, setShowThumbnails] = useState(false)
+  const [zoom, setZoom] = useState(1)
   const thumbCanvases = useRef<Map<number, HTMLCanvasElement>>(new Map())
 
   useEffect(() => {
@@ -118,12 +119,12 @@ export default function ReadPage() {
         const dpr = window.devicePixelRatio || 1
         const containerWidth = container.clientWidth
         const baseViewport = page.getViewport({ scale: 1 })
-        const scale = (containerWidth * dpr) / baseViewport.width
+        const scale = (containerWidth * dpr * zoom) / baseViewport.width
         const scaledViewport = page.getViewport({ scale })
 
         canvas.width = scaledViewport.width
         canvas.height = scaledViewport.height
-        canvas.style.width = `${containerWidth}px`
+        canvas.style.width = `${(scaledViewport.width / dpr)}px`
         canvas.style.height = "auto"
 
         renderTaskRef.current = page.render({
@@ -236,7 +237,21 @@ export default function ReadPage() {
 
         <div className="min-w-0 flex-1 text-center">
           <h2 className="truncate text-sm font-semibold">{book?.title}</h2>
-          <p className="text-xs text-muted-foreground">dari {totalPages} halaman</p>
+          <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+            <button
+              onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}
+              className="rounded border border-border px-1 hover:bg-muted"
+            >
+              <ZoomOut className="h-3 w-3" />
+            </button>
+            <span>{Math.round(zoom * 100)}%</span>
+            <button
+              onClick={() => setZoom((z) => Math.min(3, z + 0.25))}
+              className="rounded border border-border px-1 hover:bg-muted"
+            >
+              <ZoomIn className="h-3 w-3" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -265,7 +280,7 @@ export default function ReadPage() {
       <div className="min-w-0 flex-1">
         <div
           ref={containerRef}
-          className="overflow-hidden rounded-md border-2 border-border bg-white shadow-[4px_4px_0px_0px_#000000]"
+          className="overflow-hidden rounded-md border-2 border-border bg-white shadow-[4px_4px_0px_0px_#000000] max-w-3xl mx-auto"
         >
           <canvas ref={canvasRef} />
         </div>
