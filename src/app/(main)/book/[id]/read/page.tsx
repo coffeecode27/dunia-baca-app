@@ -152,7 +152,7 @@ export default function ReadPage() {
           </div>
         </div>
 
-        <div ref={containerRef} className="w-full overflow-x-auto rounded-md border-2 border-border bg-white shadow-[2px_2px_0px_0px_#000000] p-1">
+        <div ref={containerRef} className="w-full overflow-x-auto rounded-md border-2 border-border bg-white shadow-[2px_2px_0px_0px_#000000] p-1 flex justify-center">
           <canvas ref={canvasRef} />
         </div>
 
