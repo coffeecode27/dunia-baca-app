@@ -170,7 +170,7 @@ export default function ReadPage() {
         {/* Scrollable pages */}
         <div ref={scrollRef}>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-            <div key={p} data-page={p} className="flex justify-center">
+            <div key={p} data-page={p} className="mb-3 rounded-md border-2 border-border bg-white shadow-[2px_2px_0px_0px_#000000] overflow-hidden p-1">
               <canvas
                 ref={(el) => { if (el) pagesRef.current.set(p, el) }}
               />
