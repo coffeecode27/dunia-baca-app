@@ -187,16 +187,9 @@ export default function ReadPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2 rounded-md border-2 border-border bg-card p-3 shadow-[2px_2px_0px_0px_#000000]">
-        <div className="min-w-0 flex-1">
-          <h2 className="truncate text-sm font-semibold">{book?.title}</h2>
-          <p className="text-xs text-muted-foreground">
-            Halaman {pageNum} dari {totalPages}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-1">
+    <div className="space-y-3">
+      <div className="flex items-center justify-between gap-2 rounded-md border-2 border-border bg-card p-2 shadow-[2px_2px_0px_0px_#000000]">
+        <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="icon-sm"
@@ -207,12 +200,20 @@ export default function ReadPage() {
           </Button>
 
           <input
-            type="number"
-            min={1}
-            max={totalPages}
+            type="text"
+            inputMode="numeric"
             value={pageNum}
-            onChange={(e) => goToPage(Number(e.target.value))}
-            className="h-8 w-14 rounded-md border-2 border-border bg-background text-center text-sm font-semibold shadow-[2px_2px_0px_0px_#000000] outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "")
+              if (val === "") {
+                setPageNum(1)
+              } else {
+                const num = Number(val)
+                if (num >= 1 && num <= totalPages) goToPage(num)
+              }
+            }}
+            onFocus={(e) => e.target.select()}
+            className="h-8 w-16 rounded-md border-2 border-border bg-background text-center text-sm font-semibold shadow-[2px_2px_0px_0px_#000000] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           />
 
           <Button
@@ -224,13 +225,18 @@ export default function ReadPage() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
+
+        <div className="min-w-0 flex-1 text-center">
+          <h2 className="truncate text-sm font-semibold">{book?.title}</h2>
+          <p className="text-xs text-muted-foreground">dari {totalPages} halaman</p>
+        </div>
       </div>
 
       <div
         ref={containerRef}
-        className="flex justify-center rounded-md border-2 border-border bg-white p-2 shadow-[4px_4px_0px_0px_#000000]"
+        className="rounded-md border-2 border-border bg-white -mx-4 sm:mx-0 p-2 sm:p-4 md:px-8 shadow-[4px_4px_0px_0px_#000000]"
       >
-        <canvas ref={canvasRef} />
+        <canvas ref={canvasRef} className="w-full" />
       </div>
 
       <Link
