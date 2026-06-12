@@ -85,6 +85,7 @@ export default function ReadPage() {
   }, [pdfDoc, zoom])
 
   useEffect(() => { if (pageNum > 0 && pageNum <= totalPages) renderPage(pageNum) }, [pageNum, totalPages, renderPage])
+  useEffect(() => { if (pageNum > 0) renderPage(pageNum) }, [showSidebar])
   useEffect(() => { function h() { renderPage(pageNum) }; window.addEventListener("resize", h); return () => window.removeEventListener("resize", h) }, [pageNum, renderPage])
 
   function saveProgress(page: number) {
@@ -101,9 +102,9 @@ export default function ReadPage() {
   if (error) return <div className="flex min-h-[60vh] flex-col items-center justify-center gap-4"><p className="font-semibold text-destructive">{error}</p><Link href={`/book/${id}`} className={cn(buttonVariants({ variant: "outline" }))}>Kembali</Link></div>
 
   return (
-    <div className="flex gap-3">
+    <div className="flex gap-3 relative">
       {showSidebar && (
-        <div className="flex w-28 shrink-0 flex-col gap-0.5 overflow-y-auto rounded-md border-2 border-border bg-card p-1 shadow-[2px_2px_0px_0px_#000000]" style={{ maxHeight: "80vh", position: "sticky", top: "4rem" }}>
+        <div className="absolute sm:relative z-20 left-0 sm:left-auto top-0 w-36 sm:w-28 shrink-0 flex flex-col gap-0.5 overflow-y-auto rounded-md border-2 border-border bg-card p-1 shadow-[2px_2px_0px_0px_#000000]" style={{ maxHeight: "80vh", position: "sticky", top: "4rem" }}>
           {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
             <button key={p} onClick={() => goToPage(p)} className={`rounded px-2 py-1 text-left text-xs font-semibold ${p === pageNum ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"}`}>Hal. {p}</button>
           ))}
