@@ -21,14 +21,21 @@ export async function GET(
 
   const book = await prisma.book.findUnique({
     where: { id },
-    select: { title: true, fileUrl: true, description: true, coverUrl: true },
+    select: {
+      title: true, fileUrl: true, description: true, coverUrl: true,
+      categories: { select: { categoryId: true } },
+    },
   })
 
   if (!book) {
     return NextResponse.json({ error: "Buku tidak ditemukan" }, { status: 404 })
   }
 
-  return NextResponse.json(book)
+  return NextResponse.json({
+    ...book,
+    categoryIds: book.categories.map(c => c.categoryId),
+    categories: undefined,
+  })
 }
 
 export async function PATCH(
@@ -54,6 +61,7 @@ export async function PATCH(
   const formData = await request.formData()
   const coverFile = formData.get("cover") as File | null
   const description = formData.get("description") as string | null
+  const categoryIdsStr = formData.get("categoryIds") as string | null
 
   let coverUrl: string | undefined = undefined
 
@@ -84,6 +92,16 @@ export async function PATCH(
       ...(description !== null ? { description } : {}),
     },
   })
+
+  if (categoryIdsStr) {
+    const categoryIds: string[] = JSON.parse(categoryIdsStr)
+    await prisma.bookCategory.deleteMany({ where: { bookId: id } })
+    if (categoryIds.length > 0) {
+      await prisma.bookCategory.createMany({
+        data: categoryIds.map(catId => ({ bookId: id, categoryId: catId })),
+      })
+    }
+  }
 
   return NextResponse.json({ message: "Buku berhasil diupdate" })
 }

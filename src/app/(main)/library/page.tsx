@@ -37,7 +37,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
             ],
           }
         : {}),
-      ...(category ? { categoryId: category } : {}),
+      ...(category ? { categories: { some: { categoryId: category } } } : {}),
     },
     select: {
       id: true,
