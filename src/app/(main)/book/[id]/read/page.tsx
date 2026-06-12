@@ -114,14 +114,15 @@ export default function ReadPage() {
         const container = containerRef.current
         if (!container) return
 
+        const dpr = window.devicePixelRatio || 1
         const containerWidth = container.clientWidth
-        const viewport = page.getViewport({ scale: 1 })
-        const scale = containerWidth / viewport.width
+        const baseViewport = page.getViewport({ scale: 1 })
+        const scale = (containerWidth * dpr) / baseViewport.width
         const scaledViewport = page.getViewport({ scale })
 
         canvas.width = scaledViewport.width
         canvas.height = scaledViewport.height
-        canvas.style.width = "100%"
+        canvas.style.width = `${containerWidth}px`
         canvas.style.height = "auto"
 
         renderTaskRef.current = page.render({

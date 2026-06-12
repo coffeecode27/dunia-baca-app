@@ -6,7 +6,7 @@ import { prisma } from "@/lib/prisma"
 import { buttonVariants } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
-import { BookOpen, User } from "lucide-react"
+import { BookOpen, User, Pencil } from "lucide-react"
 
 interface BookDetailPageProps {
   params: Promise<{ id: string }>
@@ -18,7 +18,14 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
 
   const book = await prisma.book.findUnique({
     where: { id, status: "APPROVED" },
-    include: {
+    select: {
+      id: true,
+      title: true,
+      author: true,
+      description: true,
+      coverUrl: true,
+      fileSize: true,
+      uploaderId: true,
       uploader: { select: { name: true } },
       _count: { select: { readingProgress: true } },
     },
@@ -96,6 +103,15 @@ export default async function BookDetailPage({ params }: BookDetailPageProps) {
                 className={cn(buttonVariants(), "flex-1")}
               >
                 Baca Sekarang
+              </Link>
+            )}
+            {session?.user?.id === book.uploaderId && (
+              <Link
+                href={`/book/${book.id}/edit`}
+                className={cn(buttonVariants({ variant: "outline" }), "gap-2")}
+              >
+                <Pencil className="h-4 w-4" />
+                Edit
               </Link>
             )}
           </div>
