@@ -265,9 +265,9 @@ export default function ReadPage() {
       <div className="min-w-0 flex-1">
         <div
           ref={containerRef}
-          className="rounded-md border-2 border-border bg-white p-2 sm:p-4 md:px-8 shadow-[4px_4px_0px_0px_#000000]"
+          className="overflow-hidden rounded-md border-2 border-border bg-white shadow-[4px_4px_0px_0px_#000000]"
         >
-          <canvas ref={canvasRef} className="w-full" />
+          <canvas ref={canvasRef} />
         </div>
       </div>
       </div>
