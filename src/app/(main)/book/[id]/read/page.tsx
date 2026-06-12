@@ -6,7 +6,7 @@ import { useSession } from "next-auth/react"
 import type * as pdfjsDist from "pdfjs-dist"
 import { Button, buttonVariants } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, PanelLeft } from "lucide-react"
 import Link from "next/link"
 
 let pdfjsLib: typeof pdfjsDist | null = null
@@ -27,78 +27,9 @@ export default function ReadPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined)
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login")
-    }
-  }, [status, router])
-
-  useEffect(() => {
-    let cancelled = false
-
-    async function loadPdf() {
-      try {
-        const res = await fetch(`/api/books/${id}`)
-        const data = await res.json()
-
-        if (data.error) {
-          if (!cancelled) setError(data.error)
-          if (!cancelled) setLoading(false)
-          return
-        }
-
-        if (!cancelled) setBook(data)
-
-        if (!data.fileUrl) {
-          if (!cancelled) setError("File tidak ditemukan")
-          if (!cancelled) setLoading(false)
-          return
-        }
-
-        if (!pdfjsLib) {
-          const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs")
-          pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
-          pdfjsLib = pdfjs
-        }
-
-        const doc = await pdfjsLib.getDocument({
-          url: data.fileUrl.startsWith("http")
-            ? data.fileUrl
-            : window.location.origin + data.fileUrl,
-        }).promise
-
-        if (!cancelled) {
-          setPdfDoc(doc)
-          setTotalPages(doc.numPages)
-          setPageNum(Math.min(startFromPage, doc.numPages))
-          setLoading(false)
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error(err)
-          setError("Gagal memuat PDF")
-          setLoading(false)
-        }
-      }
-    }
-
-    if (status !== "unauthenticated") loadPdf()
-
-    return () => {
-      cancelled = true
-      if (renderTaskRef.current) {
-        renderTaskRef.current.cancel()
-        renderTaskRef.current = null
-      }
-      if (pdfDoc) {
-        pdfDoc.destroy()
-        setPdfDoc(null)
-      }
-    }
-  }, [id, status])
-
   const renderTaskRef = useRef<any>(null)
+  const [showThumbnails, setShowThumbnails] = useState(false)
+  const thumbCanvases = useRef<Map<number, HTMLCanvasElement>>(new Map())
 
   const renderPage = useCallback(
     (num: number) => {
@@ -193,6 +124,13 @@ export default function ReadPage() {
           <Button
             variant="outline"
             size="icon-sm"
+            onClick={() => setShowThumbnails(!showThumbnails)}
+          >
+            <PanelLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon-sm"
             onClick={() => goToPage(pageNum - 1)}
             disabled={pageNum <= 1}
           >
@@ -232,11 +170,36 @@ export default function ReadPage() {
         </div>
       </div>
 
-      <div
-        ref={containerRef}
-        className="rounded-md border-2 border-border bg-white -mx-4 sm:mx-0 p-2 sm:p-4 md:px-8 shadow-[4px_4px_0px_0px_#000000]"
-      >
-        <canvas ref={canvasRef} className="w-full" />
+      <div className="flex gap-3">
+        {showThumbnails && (
+          <div className="hidden w-32 shrink-0 flex-col gap-1 overflow-y-auto rounded-md border-2 border-border bg-card p-1 shadow-[2px_2px_0px_0px_#000000] sm:flex" style={{ maxHeight: "70vh" }}>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  goToPage(p)
+                  setShowThumbnails(false)
+                }}
+                className={`rounded p-1 text-xs font-semibold transition-colors ${
+                  p === pageNum
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                Hal. {p}
+              </button>
+            ))}
+          </div>
+        )}
+
+      <div className="min-w-0 flex-1">
+        <div
+          ref={containerRef}
+          className="rounded-md border-2 border-border bg-white p-2 sm:p-4 md:px-8 shadow-[4px_4px_0px_0px_#000000]"
+        >
+          <canvas ref={canvasRef} className="w-full" />
+        </div>
+      </div>
       </div>
 
       <Link
