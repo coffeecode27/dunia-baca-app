@@ -78,7 +78,8 @@ export default function ReadPage() {
       canvas.width = scaledViewport.width
       canvas.height = scaledViewport.height
       canvas.style.width = `${(scaledViewport.width / dpr)}px`
-      canvas.style.height = `${(scaledViewport.height / dpr)}px`
+      canvas.style.height = "auto"
+      canvas.style.maxWidth = "100%"
       renderTaskRef.current = page.render({ canvas, viewport: scaledViewport })
     })
   }, [pdfDoc, zoom])
@@ -121,7 +122,7 @@ export default function ReadPage() {
           </div>
         </div>
 
-        <div ref={containerRef} className="w-full rounded-md border-2 border-border bg-white shadow-[2px_2px_0px_0px_#000000] overflow-hidden p-1">
+        <div ref={containerRef} className="w-full rounded-md border-2 border-border bg-white shadow-[2px_2px_0px_0px_#000000] p-1">
           <canvas ref={canvasRef} />
         </div>
 
