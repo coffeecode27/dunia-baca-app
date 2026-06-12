@@ -133,7 +133,7 @@ export default function ReadPage() {
         })
       })
     },
-    [pdfDoc]
+    [pdfDoc, zoom]
   )
 
   useEffect(() => {
@@ -190,8 +190,9 @@ export default function ReadPage() {
 
   return (
     <div className="space-y-3">
+      {/* Top bar: title + zoom + page list toggle */}
       <div className="flex items-center justify-between gap-2 rounded-md border-2 border-border bg-card p-2 shadow-[2px_2px_0px_0px_#000000]">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 min-w-0">
           <Button
             variant="outline"
             size="icon-sm"
@@ -199,65 +200,29 @@ export default function ReadPage() {
           >
             <PanelLeft className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={() => goToPage(pageNum - 1)}
-            disabled={pageNum <= 1}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-
-          <input
-            type="text"
-            inputMode="numeric"
-            value={pageNum}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "")
-              if (val === "") {
-                setPageNum(1)
-              } else {
-                const num = Number(val)
-                if (num >= 1 && num <= totalPages) goToPage(num)
-              }
-            }}
-            onFocus={(e) => e.target.select()}
-            className="h-8 w-16 rounded-md border-2 border-border bg-background text-center text-sm font-semibold shadow-[2px_2px_0px_0px_#000000] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-          />
-
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={() => goToPage(pageNum + 1)}
-            disabled={pageNum >= totalPages}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <h2 className="truncate text-sm font-semibold">{book?.title}</h2>
         </div>
 
-        <div className="min-w-0 flex-1 text-center">
-          <h2 className="truncate text-sm font-semibold">{book?.title}</h2>
-          <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-            <button
-              onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}
-              className="rounded border border-border px-1 hover:bg-muted"
-            >
-              <ZoomOut className="h-3 w-3" />
-            </button>
-            <span>{Math.round(zoom * 100)}%</span>
-            <button
-              onClick={() => setZoom((z) => Math.min(3, z + 0.25))}
-              className="rounded border border-border px-1 hover:bg-muted"
-            >
-              <ZoomIn className="h-3 w-3" />
-            </button>
-          </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => setZoom((z) => Math.max(0.5, z - 0.25))}
+            className="rounded border border-border px-1.5 py-0.5 hover:bg-muted text-xs font-semibold"
+          >
+            −
+          </button>
+          <span className="text-xs font-semibold w-10 text-center">{Math.round(zoom * 100)}%</span>
+          <button
+            onClick={() => setZoom((z) => Math.min(3, z + 0.25))}
+            className="rounded border border-border px-1.5 py-0.5 hover:bg-muted text-xs font-semibold"
+          >
+            +
+          </button>
         </div>
       </div>
 
       <div className="flex gap-3">
         {showThumbnails && (
-          <div className="hidden w-32 shrink-0 flex-col gap-1 overflow-y-auto rounded-md border-2 border-border bg-card p-1 shadow-[2px_2px_0px_0px_#000000] sm:flex" style={{ maxHeight: "70vh" }}>
+          <div className="w-32 shrink-0 flex-col gap-1 overflow-y-auto rounded-md border-2 border-border bg-card p-1 shadow-[2px_2px_0px_0px_#000000] flex" style={{ maxHeight: "70vh" }}>
             {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
               <button
                 key={p}
@@ -285,6 +250,40 @@ export default function ReadPage() {
           <canvas ref={canvasRef} />
         </div>
       </div>
+      </div>
+
+      {/* Bottom pagination */}
+      <div className="flex items-center justify-center gap-2 rounded-md border-2 border-border bg-card p-2 shadow-[2px_2px_0px_0px_#000000]">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => goToPage(pageNum - 1)}
+          disabled={pageNum <= 1}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <input
+          type="text"
+          inputMode="numeric"
+          value={pageNum}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "")
+            if (val === "") { setPageNum(1); return }
+            const num = Number(val)
+            if (num >= 1 && num <= totalPages) goToPage(num)
+          }}
+          onFocus={(e) => e.target.select()}
+          className="h-8 w-16 rounded-md border-2 border-border bg-background text-center text-sm font-semibold shadow-[2px_2px_0px_0px_#000000] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        />
+        <span className="text-xs text-muted-foreground">/ {totalPages}</span>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => goToPage(pageNum + 1)}
+          disabled={pageNum >= totalPages}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
 
       <Link
