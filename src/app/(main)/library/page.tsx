@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { buttonVariants } from "@/components/ui/button"
 import { SearchBar } from "./_components/SearchBar"
+import { CategoryFilter } from "./_components/CategoryFilter"
 import { BookCard } from "@/components/books/BookCard"
 import { cn } from "@/lib/utils"
 import { Upload, Library, BookMarked, SearchX } from "lucide-react"
@@ -81,6 +82,8 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
       <Suspense fallback={<div className="h-10 animate-pulse rounded bg-muted" />}>
         <SearchBar />
       </Suspense>
+
+      <CategoryFilter selected={category} search={search} />
 
       {/* Results */}
       <Suspense fallback={
