@@ -12,8 +12,8 @@ interface BookCardProps {
 export function BookCard({ book, readerCount = 0 }: BookCardProps) {
   return (
     <Link href={`/book/${book.id}`}>
-      <Card className="group h-full overflow-hidden transition-shadow hover:shadow-md">
-        <div className="relative aspect-[3/4] w-full overflow-hidden bg-muted">
+      <Card className="group h-full overflow-hidden transition-shadow hover:shadow-md p-0 gap-0">
+        <div className="relative aspect-[3/4] w-full bg-muted">
           {book.coverUrl ? (
             <Image
               src={book.coverUrl}
