@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server"
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { supabase } from "@/lib/supabase"
+import { createClient } from "@supabase/supabase-js"
 import crypto from "node:crypto"
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 function randomId() {
   return crypto.randomBytes(16).toString("hex")
@@ -60,14 +65,14 @@ export async function PATCH(
 
     const ext = coverFile.name.split(".").pop() || "png"
     const coverName = `${randomId()}.${ext}`
-    const { error } = await supabase.storage
+    const { error } = await supabaseAdmin.storage
       .from("ebooks")
       .upload(`covers/${coverName}`, coverFile, {
         contentType: `image/${ext === "jpg" ? "jpeg" : ext}`,
       })
 
     if (!error) {
-      const { data } = supabase.storage.from("ebooks").getPublicUrl(`covers/${coverName}`)
+      const { data } = supabaseAdmin.storage.from("ebooks").getPublicUrl(`covers/${coverName}`)
       coverUrl = data.publicUrl
     }
   }
