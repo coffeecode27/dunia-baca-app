@@ -23,6 +23,7 @@ type CompletedUploadRequest = {
   title?: string
   author?: string
   description?: string
+  categoryId?: string
   pdf?: {
     path?: string
     size?: number
@@ -118,6 +119,7 @@ async function handleMultipartUpload(request: Request, uploaderId: string) {
       fileUrl: pdfUrl.publicUrl,
       fileSize: pdfFile.size,
       uploaderId,
+      categoryId: undefined,
       status: "APPROVED",
     },
   })
@@ -204,6 +206,7 @@ async function handleCompletedUpload(request: Request, uploaderId: string) {
       fileUrl: pdfUrl.publicUrl,
       fileSize: pdfSize,
       uploaderId,
+      categoryId: body.categoryId || null,
       status: "APPROVED",
     },
   })

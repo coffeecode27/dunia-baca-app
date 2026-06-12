@@ -32,6 +32,8 @@ model Book {
   pageCount       Int?
   status          String     @default("PENDING")
   rejectionReason String?
+  categoryId      String?
+  category        Category?  @relation(fields: [categoryId], references: [id])
   uploaderId      String
   uploader        User       @relation(fields: [uploaderId], references: [id])
   createdAt       DateTime   @default(now())
@@ -56,4 +58,10 @@ model ReadingProgress {
 
   @@unique([userId, bookId])
   @@index([userId])
+}
+
+model Category {
+  id    String @id @default(cuid())
+  name  String @unique
+  books Book[]
 }
