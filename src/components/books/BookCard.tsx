@@ -27,6 +27,7 @@ export function BookCard({ book, readerCount = 0 }: BookCardProps) {
               fill
               className="object-cover transition-transform group-hover:scale-105"
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 20vw"
+              priority
             />
           ) : (
             <div className="flex h-full items-center justify-center">
