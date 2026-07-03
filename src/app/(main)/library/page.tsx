@@ -92,7 +92,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
 
       {/* Results */}
       <Suspense fallback={
-        <div className="grid grid-cols-2 gap-5 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 max-w-3xl mx-auto">
+        <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="space-y-2">
               <div className="aspect-[3/4] animate-pulse rounded-md bg-muted" />
@@ -111,7 +111,7 @@ export default async function LibraryPage({ searchParams }: LibraryPageProps) {
 function BookResults({ books, isPrivate, search, session }: { books: any[]; isPrivate: boolean; search?: string; session: boolean }) {
   if (books.length > 0) {
     return (
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-3 max-w-5xl mx-auto">
+      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 md:grid-cols-4">
         {books.map((book: any) => (
           <BookCard key={book.id} book={book} readerCount={book._count.readingProgress} />
         ))}
