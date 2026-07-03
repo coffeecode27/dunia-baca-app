@@ -25,7 +25,7 @@ const socials = [
     url: "https://www.instagram.com/teukuimamsuranda/",
     icon: Camera,
     color: "bg-[#E4405F]",
-    desc: "Follow untuk update seputar development, tips coding, dan behind-the-scenes project.",
+    desc: "Follow untuk ngobrol santai atau sekedar saling mengenal.",
   },
   {
     name: "Facebook",
